@@ -21,7 +21,7 @@ def main() -> None:
     if output_path:
         print(f"Output will be saved to: {output_path}")
 
-    message = "Hello, world! Welcome to my project."
+    message: str = "Hello, world! Welcome to my project."
 
     print(message)
 
