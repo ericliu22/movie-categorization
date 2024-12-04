@@ -1,1 +1,4 @@
 nltk
+sklearn
+stop_list
+matplotlib
