@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 
 # Load data from processed.json
@@ -29,46 +29,63 @@ y = mlb.fit_transform(genres)
 # Split into training and test sets
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.1, random_state=42)
 
+# Custom accuracy function for multi-label classification
+def custom_accuracy(y_true, y_pred):
+    correct_predictions = 0
+    for true_labels, pred_labels in zip(y_true, y_pred):
+        true_labels_set = set(np.where(true_labels == 1)[0])
+        pred_labels_set = set(np.where(pred_labels == 1)[0])
+        if true_labels_set & pred_labels_set:
+            correct_predictions += 1
+    return correct_predictions / len(y_true)
+
 # Train and evaluate Multi-label KNN classifier
 neighbors = np.arange(1, 9)
-train_accuracy = np.empty(len(neighbors))
-test_accuracy = np.empty(len(neighbors))
+traditional_accuracies = []
+custom_accuracies = []
 
-for i, k in enumerate(neighbors):
+for k in neighbors:
     knn = KNeighborsClassifier(n_neighbors=k)
     knn.fit(X_train, y_train)
 
-    # Predict on training and test data
-    y_train_pred = knn.predict(X_train)
+    # Predict on test data
     y_test_pred = knn.predict(X_test)
 
-    # Compute accuracy for training and test sets
-    train_accuracy[i] = accuracy_score(y_train, y_train_pred)
-    test_accuracy[i] = accuracy_score(y_test, y_test_pred)
+    # Calculate traditional accuracy
+    traditional_accuracy = accuracy_score(y_test, y_test_pred)
+    traditional_accuracies.append(traditional_accuracy)
 
-# Generate plot
-plt.plot(neighbors, test_accuracy, label='Testing dataset Accuracy')
-plt.plot(neighbors, train_accuracy, label='Training dataset Accuracy')
+    # Calculate custom accuracy
+    custom_acc = custom_accuracy(y_test, y_test_pred)
+    custom_accuracies.append(custom_acc)
 
+# Generate plot for traditional and custom accuracy
+plt.figure(figsize=(10, 6))
+plt.plot(neighbors, traditional_accuracies, label='Traditional Accuracy')
+plt.plot(neighbors, custom_accuracies, label='Custom Accuracy')
 plt.legend()
 plt.xlabel('n_neighbors')
 plt.ylabel('Accuracy')
 plt.title('Multi-label KNN Accuracy')
+plt.grid()
 plt.show()
 
 # Evaluate best model
-best_k = neighbors[np.argmax(test_accuracy)]
+best_k = neighbors[np.argmax(custom_accuracies)]
 knn = KNeighborsClassifier(n_neighbors=best_k)
 knn.fit(X_train, y_train)
 y_pred = knn.predict(X_test)
 
-# Calculate overall metrics
-accuracy = accuracy_score(y_test, y_pred)
-precision = precision_score(y_test, y_pred, average='micro')
-recall = recall_score(y_test, y_pred, average='micro')
+# Calculate final metrics
+traditional_accuracy = accuracy_score(y_test, y_pred)
+custom_acc = custom_accuracy(y_test, y_pred)
 
 print(f"Best Multi-label KNN Model (k={best_k}):")
-print(f"Accuracy: {accuracy:.2f}")
-print(f"Precision: {precision:.2f}")
-print(f"Recall: {recall:.2f}")
+print(f"Traditional Accuracy: {traditional_accuracy * 100:.2f}%")
+print(f"Custom Accuracy: {custom_acc * 100:.2f}%")
 
+# Print first 10 predictions and true labels
+print("First 10 Predictions:")
+print(y_pred[:10])
+print("First 10 True Labels:")
+print(y_test[:10])
