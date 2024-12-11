@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.preprocessing import MultiLabelBinarizer, StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 # Load data from processed.json
@@ -18,12 +18,16 @@ genres = [entry["genre"] for entry in data]
 vectorizer = TfidfVectorizer()
 X = vectorizer.fit_transform(descriptions)
 
+# Normalize features using StandardScaler
+scaler = StandardScaler(with_mean=False)  # with_mean=False for sparse matrices
+X_scaled = scaler.fit_transform(X)
+
 # Binarize the genres for multi-label classification
 mlb = MultiLabelBinarizer()
 y = mlb.fit_transform(genres)
 
 # Split into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.1, random_state=42)
 
 # Train and evaluate KNN classifier
 neighbors = np.arange(1, 9)
