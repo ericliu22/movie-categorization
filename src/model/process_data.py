@@ -2,7 +2,8 @@
 import sys
 import nltk
 from collections import Counter, defaultdict
-from stop_list import closed_class_stop_words
+from nltk.corpus import stopwords
+nltk.download('stopwords')
 from nltk.tokenize import word_tokenize
 import math
 import string
@@ -38,13 +39,15 @@ def tokenize(text):
     punctuation_set = set(string.punctuation)
     lemmatizer = WordNetLemmatizer()
 
-    tokens = word_tokenize(text.lower())
+    # Explicitly load stop words
+    stop_words = set(stopwords.words('english'))
 
+    tokens = word_tokenize(text.lower())
     pos_tags = pos_tag(tokens)
     cleaned_tokens = [
         lemmatizer.lemmatize(token, get_wordnet_pos(pos) or wordnet.NOUN)  # Default to NOUN if POS is None
         for token, pos in pos_tags
-        if token.isalpha() and token not in closed_class_stop_words and token not in punctuation_set
+        if token.isalpha() and token not in stop_words and token not in punctuation_set
     ]
 
     return cleaned_tokens
