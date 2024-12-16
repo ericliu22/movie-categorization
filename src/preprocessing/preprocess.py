@@ -17,7 +17,14 @@ JUNK_DESCRIPTIONS = [
         {"plot", "wrap"},
         {"plot", "unknown"},
         {"add", "plot"},
-        {"keep", "wrap"}
+        {"keep", "wrap"},
+        {"film", "set"},
+        {"film", "introduction"}
+        ]
+
+MISSING_GENRE = [
+        "",
+        "unknown"
         ]
 
 def is_junk(description):
@@ -57,17 +64,33 @@ def preprocess(csv_file_path):
                 ],
             "genres": [] #List of genres as strings
             }
-    known_genres = set()
+    #known_genres = set()
+    known_genres = {}
     for row in csv_reader:
-        description = row["Description"]
+        #description = row["Description"] imdb desc
+        description = row["Plot"] #wikipedia desc
         genres = row["Genre"]
 
         #get genres
-        genres = [genre.strip() for genre in genres.split(',')]
+        genres = [genre.strip().lower() for genre in genres.split(',')]
+
+        #convert genres to standard forms using genre_mapping.json
+        genre_mapping = {}
+        with open('genre_mapping.json', 'r') as file:
+            genre_mapping = json.load(file)
+
+        clean_genre_list = set()
+        for genre in genres:
+            standard_genre = genre_mapping.get(genre, [""]) #get the list of genres that a genre maps o
+            clean_genre_list.update(standard_genre) # add to set of genres
+        genres = list(clean_genre_list)
 
         #we don't want movies without a genre
-        if genres == [""]:
+        if all(genre in MISSING_GENRE for genre in genres):
                 continue
+
+        #clean empty strings
+        genres = [genre for genre in genres if genre.strip()]
 
         description = tokenize(description)
 
@@ -80,9 +103,12 @@ def preprocess(csv_file_path):
             "genre": genres
             })
 
-        known_genres.update(genres)
+        for genre in genres:
+            known_genres[genre] = known_genres.get(genre,0) + 1
+        #known_genres.update(genres)
 
-    dataset["genres"] = list(known_genres)
+    #dataset["genres"] = list(known_genres)
+    dataset["genres"] = known_genres
     return dataset
 
 if __name__ == "__main__":
